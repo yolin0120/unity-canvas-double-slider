@@ -20,6 +20,7 @@ namespace TS.DoubleSlider
         [SerializeField] private float _minValue;
         [SerializeField] private float _maxValue;
         [SerializeField] private float _minDistance;
+        [SerializeField] private float _maxDistance;
         [SerializeField] private bool _wholeNumbers;
         [SerializeField] private float _initialMinValue;
         [SerializeField] private float _initialMaxValue;
@@ -84,20 +85,26 @@ namespace TS.DoubleSlider
         }
         private void Start()
         {
-            if (!_setupOnStart) { return; }
-            Setup(_minValue, _maxValue, _initialMinValue, _initialMaxValue);
+            if (!_setupOnStart) 
+                return;
+            Setup(_minValue, _maxValue, _initialMinValue, _initialMaxValue, _minDistance, _maxDistance);
         }
 
-        public void Setup(float minValue, float maxValue, float initialMinValue, float initialMaxValue)
+        public void Setup(float minValue, float maxValue, float initialMinValue, float initialMaxValue, float minDistance, float maxDistance)
         {
             _minValue = minValue;
             _maxValue = maxValue;
             _initialMinValue = initialMinValue;
             _initialMaxValue = initialMaxValue;
-
+            _minDistance = minDistance;
+            _maxDistance = maxDistance;
+        
+            _sliderMin.WholeNumbers = _wholeNumbers;
+            _sliderMax.WholeNumbers = _wholeNumbers;
+        
             _sliderMin.Setup(_initialMinValue, minValue, maxValue, MinValueChanged);
             _sliderMax.Setup(_initialMaxValue, minValue, maxValue, MaxValueChanged);
-
+    
             MinValueChanged(_initialMinValue);
             MaxValueChanged(_initialMaxValue);
         }
@@ -105,30 +112,58 @@ namespace TS.DoubleSlider
         private void MinValueChanged(float value)
         {
             float offset = ((MinValue - _minValue) / (_maxValue - _minValue)) * _fillArea.rect.width;
-
             _fillRect.offsetMin = new Vector2(offset, _fillRect.offsetMin.y);
 
             if ((MaxValue - value) < _minDistance)
             {
-                _sliderMin.Value = MaxValue - _minDistance;
+                float fixValue = value + _minDistance;
+                if (fixValue > _maxValue)
+                {
+                    _sliderMax.Value = _maxValue;
+                    _sliderMin.Value = _maxValue - _minDistance;
+                }
+                else
+                {
+                    _sliderMax.Value = value + _minDistance;
+                    _sliderMin.Value = MaxValue - _minDistance;
+                }
+            }
+
+            if ((MaxValue - value) > _maxDistance)
+            {
+                _sliderMax.Value = value + _maxDistance;
+                _sliderMin.Value = Mathf.Clamp(MaxValue - _maxDistance, _minValue, _maxValue);
             }
 
             OnValueChanged.Invoke(MinValue, MaxValue);
-            _sliderMin.transform.SetAsLastSibling();
         }
         private void MaxValueChanged(float value)
         {
             float offset = (1 - ((MaxValue - _minValue) / (_maxValue - _minValue))) * _fillArea.rect.width;
-
             _fillRect.offsetMax = new Vector2(-offset, _fillRect.offsetMax.y);
 
             if ((value - MinValue) < _minDistance)
             {
-                _sliderMax.Value = MinValue + _minDistance;
-            }
+                float fixValue = value - _maxDistance;
+                if (fixValue < _minValue)
+                {
+                    _sliderMin.Value = value - _minDistance;
+                    _sliderMax.Value = _minValue + _minDistance;
+                }
+                else
+                {
+                    _sliderMin.Value = _minValue;
+                    _sliderMax.Value = MinValue + _minDistance;
+                }
+            }    
 
+            if ((value - MinValue) > _maxDistance)
+            {
+                _sliderMin.Value = value - _maxDistance;
+                _sliderMax.Value = Mathf.Clamp(MinValue + _maxDistance, _minValue, _maxValue);
+            }
+            
             OnValueChanged.Invoke(MinValue, MaxValue);
-            _sliderMax.transform.SetAsLastSibling();
         }
     }
 }
