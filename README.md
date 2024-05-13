@@ -1,2 +1,5 @@
 # unity-canvas-double-slider
-A double slider controller with min and max values.
+功能:
+最大最小值
+最大距離 & 最小距離
+超出 大小距離自動移動
